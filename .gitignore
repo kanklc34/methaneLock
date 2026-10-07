@@ -1,0 +1,16 @@
+# Secrets and local configuration
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Local data: raw downloads are not versioned
+data/raw/
+
+# Foundry: build output and deployment records (cache can hold sensitive values)
+out/
+cache/
+broadcast/

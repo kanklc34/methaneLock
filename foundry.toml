@@ -1,0 +1,13 @@
+[profile.default]
+src = "contracts"
+test = "tests/contracts"
+script = "contracts/script"
+out = "out"
+cache_path = "cache"
+libs = ["lib"]
+solc_version = "0.8.24"
+
+# Used by: forge script ... --rpc-url sepolia
+# RPC_URL is read from the environment (load .env first, see README).
+[rpc_endpoints]
+sepolia = "${RPC_URL}"

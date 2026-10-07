@@ -1,0 +1,16 @@
+# Lower bounds only. Pin exact versions with `pip freeze` once the environment is verified.
+
+# Google Earth Engine access
+earthengine-api>=1.0
+
+# Ethereum Sepolia interaction
+web3>=6.0
+
+# Load settings from .env
+python-dotenv>=1.0
+
+# Dashboard
+streamlit>=1.30
+
+# Tests
+pytest>=8.0
