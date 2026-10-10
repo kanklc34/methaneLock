@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "dataset": "Sentinel-5P OFFL CH4",
+  "source_uri": "COPERNICUS/S5P/OFFL/L3_CH4",
+  "observation_date": "2023-08-14",
+  "location": {
+    "lat": 40.15,
+    "lon": 56.75,
+    "region_id": "control_low_activity_demo",
+    "bbox": [
+      56.0,
+      39.5,
+      57.5,
+      40.8
+    ]
+  },
+  "methane_value": 1881.5,
+  "unit": "ppb",
+  "baseline_period": {
+    "start": "2020-01-01",
+    "end": "2022-12-31"
+  },
+  "baseline_mean": 1878.0,
+  "baseline_std": 11.0,
+  "z_score": 0.3181818181818182,
+  "threshold": 2.5,
+  "qa_note": "MOCK DATA for offline dashboard demo, not derived from Sentinel-5P. No pixel-level QA/validity filter applied in this MVP. Result is spatial mean over available pixels in bbox. Band: CH4_column_volume_mixing_ratio_dry_air. Source unit: ppb; no unit conversion applied.",
+  "algorithm": "zscore-v1",
+  "algorithm_version": "1.0.0",
+  "git_commit": "0000000000000000000000000000000000000000",
+  "generated_at": "2026-10-09T00:00:00+00:00",
+  "severity_flag": "none",
+  "report_hash": "9212a7db42220286571b224b386e6c03080adc0d399424ec7f16def4777b8c2b"
+}
