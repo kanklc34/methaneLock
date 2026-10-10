@@ -6,7 +6,7 @@ Version 1.0. `schema_version` is `"1.0"`, `algorithm` is `"zscore-v1"`, `algorit
 
 An Evidence Package is the complete, machine-readable record of one analysis result. Its `report_hash` is a SHA-256 digest of the rest of the package. Anyone holding a package can recompute the digest and compare it with the hash stored on the Sepolia testnet. If the two match, the package has not changed since it was registered.
 
-The package makes the analysis verifiable. It does not establish that the measured anomaly is real, that it has a particular cause, or that it comes from a particular facility. See the README section "What this system guarantees and does not guarantee".
+The package makes the analysis verifiable. It does not establish that the measured anomaly is real, that it has a particular cause, or that it comes from a particular facility. See the README section "What the blockchain guarantees and does not guarantee" and [limitations.md](limitations.md).
 
 ## Schema
 
@@ -88,7 +88,7 @@ The block below is the template. Placeholders on the right-hand side are replace
 | `baseline_std` | number | Sample standard deviation (n − 1) of the valid daily values in the baseline period, in ppb. |
 | `z_score` | number | `(methane_value − baseline_mean) / baseline_std`. |
 | `threshold` | number | Anomaly cutoff, fixed at 2.5. A result is an anomaly when the absolute value of `z_score` is at least this value. |
-| `qa_note` | string | Fixed sentence "No pixel-level QA/validity filter applied in this MVP. Result is spatial mean over available pixels in bbox.", followed by the band used and the unit statement. |
+| `qa_note` | string | Fixed sentence "No pixel-level QA/validity filter applied in this MVP. Result is spatial mean over available pixels in bbox.", followed by the band used and the unit statement. Mock packages begin with "MOCK DATA" (see Mock packages). |
 | `algorithm` | string | Always `"zscore-v1"`. |
 | `algorithm_version` | string | `"1.0.0"`. |
 | `git_commit` | string | HEAD commit of the repository at generation time. Generation fails if no commit can be read. |
@@ -109,7 +109,7 @@ Severity bands, by the absolute value of `z_score`:
 | 3.0 up to below 4.0 | `medium` |
 | 4.0 or above | `high` |
 
-The two rules are independent. A result with an absolute z-score between 2.0 and 2.5 receives `severity_flag` `low` but is not an anomaly, because it is below the threshold. Anyone reading an Evidence Package must check `threshold` and `z_score` together with `severity_flag`. The flag alone is not an anomaly decision.
+The two rules are independent. A result with an absolute z-score between 2.0 and 2.5 receives `severity_flag` `low` but is not an anomaly, because it is below the threshold. The rule is two-sided: it uses the absolute value, so a large negative `z_score` is also an anomaly. Anyone reading an Evidence Package must check `threshold` and `z_score` together with `severity_flag`. The flag alone is not an anomaly decision.
 
 ## Hash rule
 
@@ -134,6 +134,10 @@ Verification uses the same steps. If the recomputed digest equals `report_hash`,
 
 The saved file is pretty-printed JSON (indent 2, ASCII) at `data/evidence/<region_id>_<observation_date>.json`. The hash is computed on the canonical form, not on the file bytes, so whitespace in the file does not affect verification. After saving, the pipeline reloads the file and verifies its hash.
 
+## Mock packages
+
+`data/mock/` holds two synthetic packages (scenarios A and C) for offline demonstration. They use the same schema and a valid hash, so they pass verification. They are marked in two ways: `qa_note` begins with "MOCK DATA for offline dashboard demo, not derived from Sentinel-5P." before the fixed sentence, and `git_commit` is 40 zeros. Their values are not measurements. The pipeline never writes to this directory, and real packages go to `data/evidence/`.
+
 ## On-chain record
 
 `src/blockchain/record.py` records a saved package on MethaneRegistry (Sepolia). The mapping is:
@@ -142,7 +146,7 @@ The saved file is pretty-printed JSON (indent 2, ASCII) at `data/evidence/<regio
 - `datasetId` ← `dataset` (for example `Sentinel-5P OFFL CH4`). `source_uri` is not sent.
 - `algorithmVersion` ← `algorithm_version` (for example `1.0.0`)
 
-Before any transaction, the command checks the schema, recomputes `report_hash`, confirms that the RPC chain id is 11155111 and that `CONTRACT_ADDRESS` holds contract code, and checks `isRecorded`. A hash that is already recorded is not sent again. The on-chain record shows that a hash was registered at a given block time. It does not show that the anomaly is real.
+Before any transaction, the command checks the schema, recomputes `report_hash`, confirms that the RPC chain id is 11155111 and that `CONTRACT_ADDRESS` holds contract code, and checks `isRecorded`. A hash that is already recorded is not sent again. The on-chain record shows that a hash was registered at a given block time. It does not show that the anomaly is real. The command prints the transaction hash but does not save it. The dashboard can read it from an optional `<package name>.tx.json` file next to the package, containing `{"tx_hash": "0x..."}`.
 
 ## Open items
 
@@ -151,3 +155,4 @@ These points are not decided. They must be resolved before the step that depends
 1. **Cross-implementation hash check.** The hash rule is implemented and tested in Python only. An independent implementation must reproduce the same digest for the same package before independent verification is claimed.
 2. **Uncommitted changes.** `git_commit` records the HEAD commit only. Uncommitted changes are not captured. It is undecided whether generation should refuse to run on a dirty working tree.
 3. **Confirmation of implementation choices.** The following choices are implemented as described above and remain in effect until changed explicitly: the baseline uses day-level values, the standard deviation is the sample standard deviation (n − 1), and a tie in the observation window goes to the earlier date.
+4. **Threshold value not enforced.** Schema validation checks that `threshold` is a finite number but not that it equals 2.5. The dashboard warns when a package carries a different value. It is undecided whether validation should reject it.
