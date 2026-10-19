@@ -169,29 +169,52 @@ streamlit run src/app/dashboard.py
 - Choose the source (`data/evidence` or `data/mock`), the scenario (A or C) and a package.
 - The page shows all package fields, the severity flag, the anomaly decision, `report_hash` with its verification result, and the on-chain status.
 - The anomaly decision is computed from `z_score` and `threshold` only, never from `severity_flag`.
-- **Transaction hash:** `record.py` prints the hash but does not save it. The dashboard reads an optional file next to the package, `<package name>.tx.json` containing `{"tx_hash": "0x..."}`, or accepts a hash pasted into the page for the current session. It then shows a Sepolia explorer link. Without one it shows "Not recorded on-chain yet". The dashboard shows the hash it is given; it does not check what that transaction recorded. Only `isRecorded` does that.
+- **Transaction hash:** after a successful record, `record.py` writes `<package name>.tx.json` next to the package (`tx_hash`, `block_number`, `explorer_url`). The dashboard reads `tx_hash` from that optional file, or accepts a hash pasted into the page for the current session. It then shows a Sepolia explorer link. Without either it shows "Not recorded on-chain yet". The dashboard shows the hash it is given; it does not check what that transaction recorded. Only `isRecorded` does that.
 - **isRecorded query:** optional, runs only when the button is pressed, needs `RPC_URL` and `CONTRACT_ADDRESS` (no private key), and checks that the RPC chain is Sepolia.
 
-### Record a package (Sepolia, later)
+### Sepolia runbook
+
+Needs: [Foundry](https://book.getfoundry.sh/), a Sepolia RPC URL, and a **testnet-only** account that holds Sepolia ETH. Never use a key that controls real funds.
+
+**1. Fill `.env`** (copy of `.env.example`; never commit it):
+
+| Field | Value |
+|---|---|
+| `RPC_URL` | Sepolia JSON-RPC endpoint |
+| `CHAIN_ID` | `11155111` (fixed; the deploy script and `record.py` refuse anything else) |
+| `PRIVATE_KEY` | `0x`-prefixed 64-hex key of the testnet account |
+| `CONTRACT_ADDRESS` | leave empty until step 3 |
+
+**2. Deploy the contract.** forge-std is not vendored in this repository and no git submodule is required. After cloning, install it once:
+
+```bash
+forge install foundry-rs/forge-std
+forge test
+# Load .env into the shell (bash; on Windows use Git Bash, or set the variables yourself)
+set -a; source .env; set +a
+forge script contracts/script/Deploy.s.sol --rpc-url sepolia --broadcast
+```
+
+The deploy script stops unless `CHAIN_ID` is 11155111 and the RPC reports that chain id. It prints `MethaneRegistry deployed at: 0x...`. `out/`, `cache/` and `broadcast/` are git-ignored because they can contain sensitive values.
+
+**3. Set `CONTRACT_ADDRESS`.** Copy the printed address into `.env`. Check it on `https://sepolia.etherscan.io/address/<address>`: the contract creation transaction should be listed.
+
+**4. Record one package** (explicit command; the pipeline never does this):
 
 ```bash
 python -m src.blockchain.record data/evidence/<file>.json
 ```
 
-Before sending, the command checks the package schema, recomputes `report_hash`, confirms that the RPC chain is Sepolia and that the contract address holds code, and checks that the hash is not already recorded. It prints the transaction hash and an explorer link, and never prints the private key or the RPC URL. Nothing else in the project calls it.
+Before sending, the command checks the package schema, recomputes `report_hash`, confirms that the RPC chain is Sepolia and that the address holds code, and checks that the hash is not already recorded. It prints `tx_hash` (always `0x`-prefixed), the block number and an explorer link, then writes `data/evidence/<file>.tx.json` next to the package. That file is optional: without it the dashboard still works with a pasted hash. Nothing is written when the hash was already recorded. The private key and the RPC URL are never printed.
 
-### Contract (Foundry)
+The registry stores the hash of a result whatever its decision. The two live packages are both `not anomaly`, and recording them is valid; the event name `AnomalyRecorded` does not mean a package is flagged. `is_anomaly` is read from the package, not from the chain.
 
-forge-std is used as a git submodule in `lib/forge-std`. After cloning, run `git submodule update --init --recursive`, then:
+**5. Check the event on the explorer.** Open the `explorer` link printed by the command, or paste the `tx_hash` into `https://sepolia.etherscan.io`:
 
-```bash
-forge test
-# Deploy to Sepolia (later). Load .env into the shell first.
-set -a; source .env; set +a
-forge script contracts/script/Deploy.s.sol --rpc-url sepolia --broadcast
-```
-
-The deploy script stops unless `CHAIN_ID` is 11155111 and the RPC reports that chain id. After deployment, put the address in `.env` as `CONTRACT_ADDRESS`. `out/`, `cache/` and `broadcast/` are git-ignored because they can contain sensitive values.
+- Status is **Success**, and the block number matches the output.
+- The **Logs** tab shows one `AnomalyRecorded` event from `CONTRACT_ADDRESS`.
+- The event's indexed `reportHash` (Topic 1) equals `0x` + the package's `report_hash`. If the contract is not verified on Etherscan, the log is shown undecoded: Topic 1 is the hash, and `datasetId` (`Sentinel-5P OFFL CH4`), `algorithmVersion`, `timestamp` and `submitter` are ABI-encoded in the Data field.
+- Optionally, press the `isRecorded` button in the dashboard (needs `RPC_URL` and `CONTRACT_ADDRESS`, no private key).
 
 ### Tests
 

@@ -146,7 +146,7 @@ The saved file is pretty-printed JSON (indent 2, ASCII) at `data/evidence/<regio
 - `datasetId` ← `dataset` (for example `Sentinel-5P OFFL CH4`). `source_uri` is not sent.
 - `algorithmVersion` ← `algorithm_version` (for example `1.0.0`)
 
-Before any transaction, the command checks the schema, recomputes `report_hash`, confirms that the RPC chain id is 11155111 and that `CONTRACT_ADDRESS` holds contract code, and checks `isRecorded`. A hash that is already recorded is not sent again. The on-chain record shows that a hash was registered at a given block time. It does not show that the anomaly is real. The command prints the transaction hash but does not save it. The dashboard can read it from an optional `<package name>.tx.json` file next to the package, containing `{"tx_hash": "0x..."}`.
+Before any transaction, the command checks the schema, recomputes `report_hash`, confirms that the RPC chain id is 11155111 and that `CONTRACT_ADDRESS` holds contract code, and checks `isRecorded`. A hash that is already recorded is not sent again. The on-chain record shows that a hash was registered at a given block time. It does not show that the anomaly is real. The command prints the transaction hash (always `0x`-prefixed) and, after a successful record, writes an optional `<package name>.tx.json` file next to the package with `tx_hash`, `block_number` and `explorer_url`. The dashboard reads `tx_hash` from it.
 
 ## Open items
 

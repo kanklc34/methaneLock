@@ -43,7 +43,7 @@ This page lists what MethaneLock does not do and where its results can mislead. 
 - **No removal.** A recorded hash cannot be withdrawn. A corrected package has a different hash and would be a separate record.
 - **Time.** The block timestamp shows the hash existed by that time. It does not show when the analysis was run or when the data was observed.
 - **Testnet.** Sepolia has no lasting economic security and testnets can be reset or retired. It is suitable for a demonstration, not for a durable record.
-- **Transaction links in the dashboard.** The record command does not save the transaction hash. The dashboard shows a hash supplied through a sidecar file or pasted by the user. It does not check what that transaction recorded. Only the `isRecorded` query checks the hash against the contract.
+- **Transaction links in the dashboard.** The record command writes an optional `<package name>.tx.json` file next to the package after a successful record. The dashboard shows the hash from that file or a hash pasted by the user. It does not check what that transaction recorded. Only the `isRecorded` query checks the hash against the contract.
 
 ## Security notes
 

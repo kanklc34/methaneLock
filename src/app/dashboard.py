@@ -16,7 +16,7 @@ Rules shown on screen:
     on-chain yet". The isRecorded query is optional, runs only on a button
     press, and needs RPC_URL and CONTRACT_ADDRESS (no key).
 
-Where the tx hash comes from (the recorder does not save it, so it is optional input):
+Where the tx hash comes from (optional input; the recorder writes the sidecar after a successful record):
   * a sidecar file next to the package: <package name>.tx.json = {"tx_hash": "0x..."}
   * or pasted into the page for this session only
 """

@@ -250,6 +250,96 @@ def test_cli_missing_settings_returns_1():
     assert "is not set" in out
 
 
+def _record_with(tx_hash, tmp=None):
+    tmp = tmp or Path(tempfile.mkdtemp())
+    path, _ = _package(tmp)
+    client = mock.MagicMock()
+    client.is_recorded.return_value = False
+    client.submitter = "0x" + "cd" * 20
+    client.record.return_value = reg.RecordResult(tx_hash=tx_hash, block_number=9, submitter=client.submitter)
+    rc, out = _run_cli(path, load_config=mock.MagicMock(return_value=_config()),
+                       MethaneRegistryClient=mock.MagicMock(return_value=client))
+    return path, rc, out
+
+
+def test_cli_tx_hash_always_has_0x_prefix():
+    bare = "ab" * 32
+    for raw in (bare, "0x" + bare):  # newer hexbytes returns bare hex, older returns 0x-prefixed
+        path, rc, out = _record_with(raw)
+        assert rc == 0
+        assert f"tx_hash:   0x{bare}\n" in out
+        assert f"https://sepolia.etherscan.io/tx/0x{bare}" in out
+        assert "0x0x" not in out
+        data = json.loads(path.with_suffix(".tx.json").read_text(encoding="utf-8"))
+        assert data["tx_hash"] == "0x" + bare
+
+
+def test_cli_writes_tx_sidecar_next_to_package():
+    bare = "cd" * 32
+    path, rc, out = _record_with(bare)
+    assert rc == 0
+    sidecar = path.with_suffix(".tx.json")
+    assert sidecar.exists() and sidecar.parent == path.parent
+    data = json.loads(sidecar.read_text(encoding="utf-8"))
+    assert list(data) == ["tx_hash", "block_number", "explorer_url"]
+    assert data == {
+        "tx_hash": "0x" + bare,
+        "block_number": 9,
+        "explorer_url": "https://sepolia.etherscan.io/tx/0x" + bare,
+    }
+    assert RPC not in sidecar.read_text(encoding="utf-8") and KEY[2:] not in sidecar.read_text(encoding="utf-8")
+    # the package itself is untouched, so its report_hash still verifies
+    assert ep.verify_package(ep.load_package(path))
+
+
+def test_cli_sidecar_is_readable_by_dashboard():
+    from src.app import dashboard as db
+
+    bare = "ef" * 32
+    path, rc, _ = _record_with(bare)
+    assert rc == 0
+    assert db.read_tx_sidecar(path) == "0x" + bare
+
+
+def test_cli_no_sidecar_when_already_recorded():
+    path, _ = _package(Path(tempfile.mkdtemp()))
+    client = mock.MagicMock()
+    client.is_recorded.return_value = True
+    client.submitter = "0x" + "cd" * 20
+    rc, _ = _run_cli(path, load_config=mock.MagicMock(return_value=_config()),
+                     MethaneRegistryClient=mock.MagicMock(return_value=client))
+    assert rc == 0
+    assert not path.with_suffix(".tx.json").exists()
+
+
+def test_cli_no_sidecar_when_record_fails():
+    path, _ = _package(Path(tempfile.mkdtemp()))
+    client = mock.MagicMock()
+    client.is_recorded.return_value = False
+    client.submitter = "0x" + "cd" * 20
+    client.record.side_effect = reg.RegistryError("reverted")
+    rc, _ = _run_cli(path, load_config=mock.MagicMock(return_value=_config()),
+                     MethaneRegistryClient=mock.MagicMock(return_value=client))
+    assert rc == 1
+    assert not path.with_suffix(".tx.json").exists()
+
+
+def test_cli_sidecar_write_failure_does_not_fail_the_command():
+    bare = "12" * 32
+    path, _ = _package(Path(tempfile.mkdtemp()))
+    client = mock.MagicMock()
+    client.is_recorded.return_value = False
+    client.submitter = "0x" + "cd" * 20
+    client.record.return_value = reg.RecordResult(tx_hash=bare, block_number=9, submitter=client.submitter)
+    with mock.patch.object(Path, "write_text", side_effect=PermissionError("denied")):
+        rc, out = _run_cli(path, load_config=mock.MagicMock(return_value=_config()),
+                           MethaneRegistryClient=mock.MagicMock(return_value=client))
+    assert rc == 0
+    assert f"tx_hash:   0x{bare}" in out
+    assert "WARNING" in out
+
+
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_") and callable(v)]
     for t in tests:
