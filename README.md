@@ -4,7 +4,7 @@
 
 Climate Data Analysis and transparent statistical anomaly detection on public satellite methane data, with a tamper-evident record of each result.
 
-> **Status:** the analysis pipeline, Evidence Package, registry contract and dashboard are implemented and tested offline. A live Earth Engine run and a Sepolia deployment are still pending. This means that **no result in this repository comes from real satellite data yet, and no hash is recorded on-chain yet.** The example packages in `data/mock/` are synthetic and labelled as such. See [Project status](#project-status).
+> **Status:** the analysis pipeline, Evidence Package, registry contract and dashboard are implemented and tested offline. The pipeline has been run once on real Sentinel-5P data (2026-10-19): two Evidence Packages are in `data/evidence/`, and **neither is flagged as an anomaly**. The Sepolia deployment is still pending, so **no hash is recorded on-chain yet**. The packages in `data/mock/` are synthetic and labelled as such. See [Project status](#project-status).
 
 ## Problem
 
@@ -97,20 +97,22 @@ The full list, with the reasoning, is in [docs/limitations.md](docs/limitations.
 - **No quality filter.** Pixel-level validity information is not used. Clouds, surface conditions and retrieval bias are not handled.
 - **Simple baseline.** The baseline pools all days of 2020–2022 with no seasonal or long-term trend correction, so a single August 2023 value can differ from it for reasons unrelated to local emissions.
 - **False positives are expected.** One observation, a fixed threshold and no persistence check. Even with perfectly normal data, about 1 in 80 observations would exceed 2.5 by chance.
-- **Mock versus real.** Until the live run is done, every example package is synthetic.
+- **One run, two regions.** The live result is a single observation per region. The observation day was seven days from the target date in both regions. Packages in `data/mock/` are synthetic and are not results.
 
 ## Validation
 
 Details and the scenario table: [docs/validation.md](docs/validation.md).
 
-What exists today is offline validation of the logic, using synthetic data. The table below shows the two scenario packages in `data/mock/`. These values were chosen by hand to exercise the rules. **They are not measurements and are not evidence that the method detects real emissions.**
+Two kinds of validation exist today. The logic is checked offline with synthetic data (tests). The pipeline has also been run once on real data, giving the two packages below. Both pass the integrity check and neither exceeds the threshold. **One observation per region does not show that the method detects real emissions, and it does not show that it fails to.**
 
-| Scenario | Observation date | `methane_value` (ppb) | Baseline mean ± std (ppb) | `z_score` | `severity_flag` | Anomaly (`abs(z) >= 2.5`) | Live result |
-|---|---|---|---|---|---|---|---|
-| A: `turkmenistan_west_coast_og` (mock) | 2023-08-15 | 1925.0 | 1880.0 ± 12.0 | 3.750 | medium | yes | pending |
-| C: `control_low_activity_demo` (mock) | 2023-08-14 | 1881.5 | 1878.0 ± 11.0 | 0.318 | none | no | pending |
+Live run, 2026-10-19 (`data/evidence/`):
 
-This table will be replaced with the live Earth Engine results once they exist, whatever they turn out to be.
+| Scenario | Observation date | `methane_value` (ppb) | Baseline mean ± std (ppb) | `z_score` | `severity_flag` | Anomaly (`abs(z) >= 2.5`) |
+|---|---|---|---|---|---|---|
+| A: `turkmenistan_west_coast_og` | 2023-08-08 | 1953.02 | 1935.92 ± 15.62 | 1.094 | none | no |
+| C: `control_low_activity_demo` | 2023-08-08 | 1924.10 | 1916.20 ± 13.67 | 0.578 | none | no |
+
+The target date was 2023-08-15. The nearest valid day to it was 2023-08-08 in both regions. Report hashes and the full table are in [docs/validation.md](docs/validation.md). The synthetic packages in `data/mock/` exist only to show what a flagged package looks like in the dashboard.
 
 ## How to run
 
@@ -138,15 +140,16 @@ cp .env.example .env                      # Windows: copy .env.example .env
 streamlit run src/app/dashboard.py
 ```
 
-With `data/evidence/` empty, the dashboard opens on the mock packages in `data/mock/` and shows a "MOCK DATA" warning. Suggested walkthrough:
+The dashboard opens on `data/evidence/` (the live packages). If that folder is empty it opens on the synthetic packages in `data/mock/` and shows a "MOCK DATA" warning. Suggested walkthrough:
 
-1. Choose scenario **A**. Point out the `severity_flag` badge, the `z_score`, and the separate **is_anomaly** box (`|z| = 3.750 ≥ threshold 2.5`).
+1. Source `data/evidence`, scenario **A**. Point out the `severity_flag` badge (`none`), the `z_score` (1.094), and the separate **is_anomaly** box (`|z| = 1.094 < threshold 2.5`, so `NO`).
 2. Show `report_hash` and the green integrity banner (schema valid, hash recomputed and matching).
 3. Show the on-chain area: no transaction is known, so it reads **Not recorded on-chain yet**. The `isRecorded` button is disabled with a reason while `RPC_URL` or `CONTRACT_ADDRESS` is missing.
 4. Choose scenario **C** and compare: severity `none`, anomaly `NO`.
-5. Integrity demo: copy a mock file into `data/evidence/`, change one number such as `methane_value`, and reload the dashboard. The banner turns red because the hash no longer matches.
+5. To see a flagged package, switch the source to `data/mock` (a yellow MOCK warning appears) and choose **A**: severity `medium`, `z = 3.750`, anomaly `YES`. This package is synthetic and is only an illustration.
+6. Integrity demo: copy a live package under a new name in `data/evidence/`, change one number such as `methane_value`, and reload the dashboard. The banner turns red because the hash no longer matches. Delete the copy afterwards.
 
-**Offline and the pipeline.** The pipeline itself needs live Earth Engine access; it has no offline mode. The offline paths are the test suite (synthetic data, Earth Engine and web3 mocked) and the mock packages above.
+**Offline and the pipeline.** The pipeline itself needs live Earth Engine access; it has no offline mode. The offline paths are the test suite (synthetic data, Earth Engine and web3 mocked) and the saved packages in `data/evidence/` and `data/mock/`.
 
 ### Pipeline (live Earth Engine)
 
@@ -256,7 +259,7 @@ Mapping from a package: `reportHash` ← `report_hash`, `datasetId` ← `dataset
 | Registry contract | implemented; `forge test` passes locally |
 | Record command | implemented; tested offline with a mocked chain |
 | Dashboard | implemented; works with mock or saved packages |
-| **Live Earth Engine run** | **pending** |
+| Live Earth Engine run | done once (2026-10-19): two packages in `data/evidence/`, no anomaly flagged |
 | **Sepolia deployment and first on-chain record** | **pending** (deployed address: none yet) |
 
-Until the two pending items are done, results shown anywhere in this repository are synthetic, and the on-chain guarantees above describe the design, not a demonstrated record.
+Until the Sepolia step is done, the on-chain guarantees above describe the design, not a demonstrated record. The live analysis rests on one observation per region.
