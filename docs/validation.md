@@ -11,7 +11,7 @@ This page states what has been checked, how, and what has not.
 | Does the Evidence Package hash behave as specified? | Both live packages verify with the Python implementation; no independent implementation yet |
 | Does the registry contract behave as specified? | Checked with Foundry tests (7 tests) |
 | Does the method detect real methane anomalies? | **Not established.** One observation per region, and neither was flagged |
-| Is anything recorded on Sepolia? | **No** |
+| Is anything recorded on Sepolia? | **Yes, one package** (`turkmenistan_west_coast_og`, 2026-10-20). `isRecorded` returns true. The control package is not recorded |
 
 ## Offline tests
 
@@ -48,7 +48,7 @@ The pipeline was run once against Google Earth Engine (`COPERNICUS/S5P/OFFL/L3_C
 | `generated_at` (UTC) | 2026-10-19T06:29:08 | 2026-10-19T06:29:48 |
 | `git_commit` | `019c8fb270366ecaf5a0361a0ca2164341ca4141` | `019c8fb270366ecaf5a0361a0ca2164341ca4141` |
 | Integrity check | schema valid, hash matches | schema valid, hash matches |
-| On-chain record | none | none |
+| On-chain record | recorded in transaction `0xf180c1cb65e25686c6bf1fd78683d5716a26e62a16c3422da8acb6db6b74afe5` (contract `0xa2348898ac5548cFEfB9D2a07a4d2c352be3E9Ea`) | none |
 
 ### What this shows
 
@@ -80,4 +80,4 @@ The pipeline was run once against Google Earth Engine (`COPERNICUS/S5P/OFFL/L3_C
 1. **Spot check against Earth Engine.** Compute one daily spatial mean for one box by hand in the Earth Engine Code Editor and compare it with the pipeline value.
 2. **Independent hash.** Reproduce one package's `report_hash` with a second implementation (for example in another language) from the specification alone.
 3. **Observation day.** Find out why no valid day lies closer than seven days to the target date in either box.
-4. **On-chain round trip.** Deploy to Sepolia, record one package, confirm `isRecorded` returns true in the dashboard, and confirm a second attempt to record the same package is refused.
+4. **Duplicate refusal on Sepolia.** The round trip is done for one package (deployed, recorded, `isRecorded` true with `cast call` and in the dashboard). A second attempt to record the same package has not been tried on Sepolia; it is covered only by the offline tests and the contract tests.

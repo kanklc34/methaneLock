@@ -4,7 +4,7 @@
 
 Climate Data Analysis and transparent statistical anomaly detection on public satellite methane data, with a tamper-evident record of each result.
 
-> **Status:** the analysis pipeline, Evidence Package, registry contract and dashboard are implemented and tested offline. The pipeline has been run once on real Sentinel-5P data (2026-10-19): two Evidence Packages are in `data/evidence/`, and **neither is flagged as an anomaly**. The Sepolia deployment is still pending, so **no hash is recorded on-chain yet**. The packages in `data/mock/` are synthetic and labelled as such. See [Project status](#project-status).
+> **Status:** the analysis pipeline, Evidence Package, registry contract and dashboard are implemented and tested offline. The pipeline has been run once on real Sentinel-5P data (2026-10-19): two Evidence Packages are in `data/evidence/`, and **neither is flagged as an anomaly**. The registry contract is deployed on Sepolia and the hash of the `turkmenistan_west_coast_og` package is recorded there (2026-10-20); the control package is not recorded. A record shows that a hash existed on the contract. It does not show that the analysis finds real anomalies. The packages in `data/mock/` are synthetic and labelled as such. See [Project status](#project-status).
 
 ## Problem
 
@@ -285,6 +285,6 @@ Mapping from a package: `reportHash` ← `report_hash`, `datasetId` ← `dataset
 | Record command | implemented; tested offline with a mocked chain |
 | Dashboard | implemented; works with mock or saved packages |
 | Live Earth Engine run | done once (2026-10-19): two packages in `data/evidence/`, no anomaly flagged |
-| **Sepolia deployment and first on-chain record** | **pending** (deployed address: none yet) |
+| **Sepolia deployment and first on-chain record** | done (2026-10-20): contract [`0xa2348898ac5548cFEfB9D2a07a4d2c352be3E9Ea`](https://sepolia.etherscan.io/address/0xa2348898ac5548cFEfB9D2a07a4d2c352be3E9Ea); the `turkmenistan_west_coast_og` package is recorded in transaction [`0xf180c1cb65e25686c6bf1fd78683d5716a26e62a16c3422da8acb6db6b74afe5`](https://sepolia.etherscan.io/tx/0xf180c1cb65e25686c6bf1fd78683d5716a26e62a16c3422da8acb6db6b74afe5); `isRecorded` returns true (checked with `cast call` and in the dashboard). The control package is not recorded |
 
-Until the Sepolia step is done, the on-chain guarantees above describe the design, not a demonstrated record. The live analysis rests on one observation per region.
+The on-chain guarantees above are demonstrated for one record on a testnet. They say nothing about whether the analysis detects real anomalies: the live analysis rests on one observation per region, and neither was flagged.

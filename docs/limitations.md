@@ -5,7 +5,7 @@ This page lists what MethaneLock does not do and where its results can mislead. 
 ## Status of the results
 
 - **One live run.** The Earth Engine pipeline has been run once on real data (2026-10-19). Its two packages are in `data/evidence/`, and neither is flagged as an anomaly. Packages in `data/mock/` are synthetic: their `qa_note` begins with "MOCK DATA" and their `git_commit` is all zeros.
-- **No on-chain record yet.** The contract has not been deployed to Sepolia and no hash has been recorded. The guarantees in the README describe the design.
+- **One on-chain record.** The contract is deployed on Sepolia (`0xa2348898ac5548cFEfB9D2a07a4d2c352be3E9Ea`) and one hash is recorded: the `turkmenistan_west_coast_og` package (2026-10-20). The control package is not recorded. A record shows that this hash existed on the contract, not that the analysis is right.
 - **Mock versus real in the dashboard.** The dashboard labels the source it reads from. Packages in `data/mock/` pass the integrity check like any other package, because their hash is valid. A passing check means "unchanged", not "real".
 
 ## Data and resolution
