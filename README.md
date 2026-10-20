@@ -192,10 +192,12 @@ forge install foundry-rs/forge-std
 forge test
 # Load .env into the shell (bash; on Windows use Git Bash, or set the variables yourself)
 set -a; source .env; set +a
-forge script contracts/script/Deploy.s.sol --rpc-url sepolia --broadcast
+forge script contracts/script/Deploy.s.sol --rpc-url sepolia --broadcast --gas-estimate-multiplier 850
 ```
 
 The deploy script stops unless `CHAIN_ID` is 11155111 and the RPC reports that chain id. It prints `MethaneRegistry deployed at: 0x...`. `out/`, `cache/` and `broadcast/` are git-ignored because they can contain sensitive values.
+
+`--gas-estimate-multiplier 850` is needed on Sepolia: forge's local simulation estimates about 300k gas for the contract creation, while the network asked for about 1.97M (`cast estimate --create` shows the real figure). With forge's default multiplier the transaction was mined but failed (`[Failed]`, status 0, all gas used) and left no code at the printed address. Unused gas is refunded, so the real cost stays tiny. A successful run shows `[Success]` for the transaction; confirm with `cast code <address> --rpc-url "$RPC_URL"`, which must print more than `0x`. Do not use an address from a failed deployment.
 
 **3. Set `CONTRACT_ADDRESS`.** Copy the printed address into `.env`. Check it on `https://sepolia.etherscan.io/address/<address>`: the contract creation transaction should be listed.
 
