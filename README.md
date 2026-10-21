@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/methanelock-mark.png" alt="MethaneLock logo: a satellite over the Earth, a verified report and linked blocks" width="220">
+</p>
+
 # MethaneLock
 
 **Decentralized Methane Anomaly Registry**
